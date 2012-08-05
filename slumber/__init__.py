@@ -125,7 +125,7 @@ class Resource(ResourceAttributesMixin, object):
 
         resp = self._request("POST", data=s.dumps(data), params=kwargs)
         if 200 <= resp.status_code <= 299:
-            if resp.headers.get("location"):
+            if resp.headers.get("location") and self._store["follow_redirects"]:
                 # @@@ Hacky, see description in __call__
                 resource_obj = self(url_override=resp.headers["location"])
                 return resource_obj.get(params=kwargs)
@@ -150,9 +150,13 @@ class Resource(ResourceAttributesMixin, object):
                 resource_obj = self(url_override=resp.headers["location"])
                 return resource_obj.get(params=kwargs)
             else:
+                return resp.content
                 try:
                     stype = s.get_serializer(content_type=resp.headers.get("content-type"))
                 except exceptions.SerializerNotAvailable:
+                try:
+                    return s.loads(resp.content)
+                except:
                     return resp.content
 
                 return stype.loads(resp.content)
@@ -185,12 +189,13 @@ class Resource(ResourceAttributesMixin, object):
 
 class API(ResourceAttributesMixin, object):
 
-    def __init__(self, base_url=None, auth=None, format=None, append_slash=True, session=None, serializer=None):
+    def __init__(self, base_url=None, auth=None, format=None, append_slash=True, session=None, serializer=None, follow_redirects=True):
         if serializer is None:
             s = Serializer(default=format)
 
         self._store = {
             "base_url": base_url,
+            "follow_redirects": follow_redirects,
             "format": format if format is not None else "json",
             "append_slash": append_slash,
             "session": requests.session(auth=auth) if session is None else session,
