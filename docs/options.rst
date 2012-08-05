@@ -51,3 +51,8 @@ Slashes
 Slumber assumes by default that all urls should end with a slash. If you do not
 want this behavior you can control it via the append_slash option which can be
 set by passing append_slash to the ``slumber.API`` kwargs.
+
+When creating a new object via POST, if a 201 result with a "Location" header is 
+returned, Slumber will perform a GET request on the newly created object.  You can
+disable this behavior via the follow_redirects option which can be
+set by passing follow_redirects to the ``slumber.API`` kwargs.

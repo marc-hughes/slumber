@@ -124,12 +124,15 @@ class Resource(ResourceAttributesMixin, object):
 
         resp = self._request("POST", data=s.dumps(data), params=kwargs)
         if 200 <= resp.status_code <= 299:
-            if resp.status_code == 201:
+            if resp.status_code == 201 and self._store["follow_redirects"]:
                 # @@@ Hacky, see description in __call__
                 resource_obj = self(url_override=resp.headers["location"])
                 return resource_obj.get(params=kwargs)
             else:
-                return resp.content
+                try:
+                    return s.loads(resp.content)
+                except:
+                    return resp.content
         else:
             # @@@ Need to be Some sort of Error Here or Something
             return
@@ -159,9 +162,10 @@ class Resource(ResourceAttributesMixin, object):
 
 class API(ResourceAttributesMixin, object):
 
-    def __init__(self, base_url=None, auth=None, format=None, append_slash=True, session=None):
+    def __init__(self, base_url=None, auth=None, format=None, append_slash=True, session=None, follow_redirects=True):
         self._store = {
             "base_url": base_url,
+            "follow_redirects": follow_redirects,
             "format": format if format is not None else "json",
             "append_slash": append_slash,
             "session": requests.session(auth=auth) if session is None else session,
